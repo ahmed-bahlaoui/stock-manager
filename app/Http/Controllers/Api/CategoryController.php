@@ -14,6 +14,8 @@ class CategoryController extends Controller
 {
     public function index(): AnonymousResourceCollection
     {
+        $this->authorize('viewAny', Category::class);
+
         $categories = Category::query()
             ->withCount('products')
             ->latest()
@@ -24,6 +26,8 @@ class CategoryController extends Controller
 
     public function store(StoreCategoryRequest $request): JsonResponse
     {
+        $this->authorize('create', Category::class);
+
         $category = Category::query()->create($request->validated());
 
         return response()->json([
@@ -34,11 +38,15 @@ class CategoryController extends Controller
 
     public function show(Category $category): CategoryResource
     {
+        $this->authorize('view', $category);
+
         return new CategoryResource($category->loadCount('products'));
     }
 
     public function update(UpdateCategoryRequest $request, Category $category): JsonResponse
     {
+        $this->authorize('update', $category);
+
         $category->update($request->validated());
 
         return response()->json([
@@ -49,6 +57,8 @@ class CategoryController extends Controller
 
     public function destroy(Category $category): JsonResponse
     {
+        $this->authorize('delete', $category);
+
         $category->delete();
 
         return response()->json([

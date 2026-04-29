@@ -20,6 +20,8 @@ class StockMovementController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
+        $this->authorize('viewAny', StockMovement::class);
+
         $movements = StockMovement::query()
             ->with(['product.category', 'order'])
             ->when($request->integer('product_id'), function ($query, int $productId) {
@@ -39,11 +41,15 @@ class StockMovementController extends Controller
 
     public function show(StockMovement $stockMovement): StockMovementResource
     {
+        $this->authorize('view', $stockMovement);
+
         return new StockMovementResource($stockMovement->load(['product.category', 'order']));
     }
 
     public function stockIn(StockInRequest $request): JsonResponse
     {
+        $this->authorize('stockIn', StockMovement::class);
+
         $movement = $this->stockService->stockIn($request->validated());
 
         return response()->json([

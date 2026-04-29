@@ -19,6 +19,8 @@ class OrderController extends Controller
 
     public function index(): AnonymousResourceCollection
     {
+        $this->authorize('viewAny', Order::class);
+
         $orders = Order::query()
             ->with(['items.product.category', 'stockMovements'])
             ->latest()
@@ -29,11 +31,15 @@ class OrderController extends Controller
 
     public function show(Order $order): OrderResource
     {
+        $this->authorize('view', $order);
+
         return new OrderResource($order->load(['items.product.category', 'stockMovements']));
     }
 
     public function store(StoreOrderRequest $request): JsonResponse
     {
+        $this->authorize('create', Order::class);
+
         $order = $this->orderService->create($request->validated());
 
         return response()->json([

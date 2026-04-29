@@ -22,18 +22,71 @@ php artisan migrate:fresh --seed
 
 ## Insomnia Setup
 
-For every request, use these headers:
+Public auth requests use these headers:
 
 ```text
 Accept: application/json
 Content-Type: application/json
 ```
 
+After login, protected requests must also include:
+
+```text
+Authorization: Bearer YOUR_TOKEN
+```
+
+## Seeded Demo Users
+
+Use one of these demo accounts after `php artisan migrate:fresh --seed`:
+
+- `admin@example.com` / `password`
+- `warehouse@example.com` / `password`
+- `sales@example.com` / `password`
+
+Role behavior:
+- `admin`: full access
+- `warehouse`: can do `stock_in` and view inventory/order data
+- `sales`: can create orders and view categories/products/orders
+
 ## Demo Flow
 
 Use this order during the demo.
 
-### 1. List Seeded Categories
+### 1. Login
+
+```http
+POST /api/login
+```
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "password"
+}
+```
+
+What to verify:
+- response status is `200`
+- response includes `token`
+- response includes user role
+
+Copy the token and add:
+
+```text
+Authorization: Bearer YOUR_TOKEN
+```
+
+### 2. Show Logged-In User
+
+```http
+GET /api/me
+```
+
+What to verify:
+- current authenticated user is returned
+- role is `admin`
+
+### 3. List Seeded Categories
 
 ```http
 GET /api/categories
@@ -43,7 +96,7 @@ What to verify:
 - categories exist
 - each category shows `products_count`
 
-### 2. List Seeded Products
+### 4. List Seeded Products
 
 ```http
 GET /api/products
@@ -55,7 +108,7 @@ What to verify:
 - each product includes `is_low_stock`
 - category info is embedded
 
-### 3. Create A New Category
+### 5. Create A New Category
 
 ```http
 POST /api/categories
@@ -73,7 +126,7 @@ What to verify:
 - response status is `201`
 - returned category contains `id`, `name`, `slug`
 
-### 4. Create A New Product
+### 6. Create A New Product
 
 ```http
 POST /api/products
@@ -97,7 +150,7 @@ What to verify:
 - response status is `201`
 - product appears in `GET /api/products`
 
-### 5. Receive Stock
+### 7. Receive Stock
 
 ```http
 POST /api/stock-movements/stock-in
@@ -118,7 +171,7 @@ What to verify:
 - movement type is `stock_in`
 - product quantity increases
 
-### 6. Place An Order
+### 8. Place An Order
 
 ```http
 POST /api/orders
@@ -143,7 +196,7 @@ What to verify:
 - order contains `stock_movements`
 - product quantity decreases
 
-### 7. Show All Orders
+### 9. Show All Orders
 
 ```http
 GET /api/orders
@@ -153,7 +206,7 @@ What to verify:
 - created order is visible
 - item details show product name and SKU
 
-### 8. Show One Order
+### 10. Show One Order
 
 ```http
 GET /api/orders/1
@@ -165,7 +218,7 @@ What to verify:
 - order details load correctly
 - related `stock_movements` are present
 
-### 9. Show Stock History
+### 11. Show Stock History
 
 ```http
 GET /api/stock-movements
@@ -182,6 +235,45 @@ GET /api/stock-movements?product_id=6
 GET /api/stock-movements?order_id=1
 GET /api/stock-movements?type=stock_out
 ```
+
+## Role Demo
+
+Use this to demonstrate authorization.
+
+### Warehouse Login
+
+```http
+POST /api/login
+```
+
+```json
+{
+  "email": "warehouse@example.com",
+  "password": "password"
+}
+```
+
+What to verify:
+- warehouse can call `POST /api/stock-movements/stock-in`
+- warehouse gets `403` on `POST /api/orders`
+
+### Sales Login
+
+```http
+POST /api/login
+```
+
+```json
+{
+  "email": "sales@example.com",
+  "password": "password"
+}
+```
+
+What to verify:
+- sales can call `POST /api/orders`
+- sales gets `403` on `POST /api/categories`
+- sales gets `403` on `POST /api/stock-movements/stock-in`
 
 ## Failure Demo
 
@@ -211,6 +303,11 @@ What to verify:
 ## Demo Endpoints Summary
 
 ```text
+POST   /api/register
+POST   /api/login
+GET    /api/me
+POST   /api/logout
+
 GET    /api/categories
 POST   /api/categories
 GET    /api/categories/{id}
@@ -236,11 +333,14 @@ GET    /api/orders/{id}
 
 Use this simple story:
 
-1. Show seeded categories and products.
-2. Create a new category.
-3. Create a new product in that category.
-4. Add stock to the product.
-5. Place an order for that product.
-6. Open the order details.
-7. Open stock movements to prove the audit trail.
-8. Try an invalid large order to show stock protection.
+1. Log in as admin and explain token authentication.
+2. Show the current authenticated user with `/api/me`.
+3. Show seeded categories and products.
+4. Create a new category.
+5. Create a new product in that category.
+6. Add stock to the product.
+7. Place an order for that product.
+8. Open the order details.
+9. Open stock movements to prove the audit trail.
+10. Try an invalid large order to show stock protection.
+11. Log in as warehouse or sales to show role restrictions.

@@ -8,6 +8,8 @@ This project is a Laravel API-based stock management backend for an e-commerce a
 
 Current backend status:
 - core inventory schema is implemented
+- Sanctum authentication is implemented
+- role-based authorization is implemented
 - category CRUD is implemented
 - product CRUD is implemented
 - stock receiving is implemented
@@ -22,7 +24,8 @@ Current application status:
 - demo data can be reset and reloaded
 - the project is suitable for backend demonstration and API testing in Insomnia
 - there is no frontend application yet
-- there is no authentication or authorization layer yet
+- API authentication is active
+- role-based access control is active
 
 The system currently supports:
 - categories
@@ -41,8 +44,6 @@ Core business rules implemented:
 
 What is not implemented yet:
 - frontend UI
-- authentication
-- authorization / roles / permissions
 - order cancellation with stock restoration
 - update or delete protection rules for business-critical records
 - dashboards, reports, or analytics
@@ -120,6 +121,7 @@ This kept responsibilities separate:
 - controllers receive HTTP requests and return responses
 - services contain the real stock and order logic
 - resources format JSON output cleanly
+- policies control who can access which action
 
 ## Main Modules Implemented
 
@@ -199,6 +201,31 @@ Business logic:
 - insufficient stock returns `422 Unprocessable Entity`
 - failed orders are rolled back
 
+### Authentication And Authorization Module
+
+Implemented:
+- Laravel Sanctum token authentication
+- user roles with a `role` column on `users`
+- protected API routes with `auth:sanctum`
+- policy-based authorization
+- login, register, profile, and logout endpoints
+
+Auth endpoints:
+- `POST /api/register`
+- `POST /api/login`
+- `GET /api/me`
+- `POST /api/logout`
+
+Roles:
+- `admin`
+- `warehouse`
+- `sales`
+
+Role rules:
+- `admin` has full access
+- `warehouse` can view inventory and orders and perform `stock_in`
+- `sales` can view categories/products/orders and create orders
+
 ## Services We Added
 
 ### `StockService`
@@ -228,6 +255,8 @@ This separation is important because stock rules should not be buried directly i
 We added Laravel Form Requests to validate incoming API data before the controller logic runs.
 
 Examples:
+- `RegisterRequest`
+- `LoginRequest`
 - `StoreCategoryRequest`
 - `UpdateCategoryRequest`
 - `StoreProductRequest`
@@ -247,6 +276,7 @@ We added API Resources for consistent JSON output:
 - `ProductResource`
 - `OrderResource`
 - `StockMovementResource`
+- `UserResource`
 
 This made the API easier to test in Insomnia and easier to present tomorrow.
 
@@ -259,6 +289,12 @@ It seeds:
 - 3 categories
 - 5 products
 - 5 initial stock-in movements
+- 3 demo users for auth testing
+
+Seeded users:
+- `admin@example.com` / `password`
+- `warehouse@example.com` / `password`
+- `sales@example.com` / `password`
 
 This allows a full reset to demo-ready data with:
 
@@ -275,11 +311,17 @@ Covered scenarios:
 - order creation decreases stock
 - insufficient stock returns `422`
 - stock movements are recorded for stock-in and stock-out
+- user can register and receive a token
+- user can log in and fetch profile data
+- guest cannot access protected inventory routes
+- sales cannot create categories
+- warehouse can stock in but cannot create orders
 
 Run the tests with:
 
 ```bash
 php artisan test --filter=InventoryApiTest
+php artisan test --filter=AuthApiTest
 ```
 
 ## How To Run The Project
@@ -310,25 +352,45 @@ http://127.0.0.1:8000/api
 
 ## How To Test With Insomnia
 
-For every request, use these headers:
+Public auth endpoints:
+- `POST /api/register`
+- `POST /api/login`
+
+Protected endpoints require:
+- `Authorization: Bearer YOUR_TOKEN`
+- `Accept: application/json`
+- `Content-Type: application/json`
+
+For login/register, use these headers:
 
 ```text
 Accept: application/json
 Content-Type: application/json
 ```
 
+Login example:
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "password"
+}
+```
+
 Recommended demo/testing order:
 
-1. `GET /api/categories`
-2. `GET /api/products`
-3. `POST /api/categories`
-4. `POST /api/products`
-5. `POST /api/stock-movements/stock-in`
-6. `POST /api/orders`
-7. `GET /api/orders`
-8. `GET /api/orders/{id}`
-9. `GET /api/stock-movements`
-10. `POST /api/orders` with too-large quantity to show the stock validation error
+1. `POST /api/login`
+2. copy the Bearer token
+3. `GET /api/categories`
+4. `GET /api/products`
+5. `POST /api/categories` as admin
+6. `POST /api/products` as admin
+7. `POST /api/stock-movements/stock-in` as admin or warehouse
+8. `POST /api/orders` as admin or sales
+9. `GET /api/orders`
+10. `GET /api/orders/{id}`
+11. `GET /api/stock-movements`
+12. `POST /api/orders` with too-large quantity to show the stock validation error
 
 ## Example Demo Payloads
 
@@ -398,7 +460,23 @@ Expected result:
 - HTTP `422`
 - stock remains unchanged
 
+### Login
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "password"
+}
+```
+
 ## Full Endpoint Summary
+
+### Categories
+
+- `POST /api/register`
+- `POST /api/login`
+- `GET /api/me`
+- `POST /api/logout`
 
 ### Categories
 
@@ -438,10 +516,12 @@ Optional list filters:
 
 These checks were run against the current codebase:
 - `php artisan route:list`
+- `php artisan test --filter=AuthApiTest`
 - `php artisan test --filter=InventoryApiTest`
 
 Verified result:
-- 20 routes are currently registered
+- 25 routes are currently registered
+- the 5 auth feature tests pass
 - the 4 core inventory feature tests pass
 
 ## Presentation Summary
@@ -451,9 +531,10 @@ If you need a short presentation version, use this:
 1. We designed a stock management backend in Laravel using migrations, models, controllers, services, requests, and resources.
 2. We created the core tables for categories, products, orders, order items, and stock movements.
 3. We implemented business rules so stock increases on receiving goods and decreases on order creation.
-4. We prevented orders when stock is insufficient and recorded every stock change for auditability.
-5. We exposed the system through clean REST API endpoints.
-6. We seeded demo data and added automated feature tests to make the prototype stable and demo-ready.
+4. We added Sanctum authentication and role-based authorization for admin, warehouse, and sales users.
+5. We prevented orders when stock is insufficient and recorded every stock change for auditability.
+6. We exposed the system through clean REST API endpoints.
+7. We seeded demo data and added automated feature tests to make the prototype stable and demo-ready.
 
 ## Demo Guide
 

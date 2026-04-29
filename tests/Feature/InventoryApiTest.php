@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class InventoryApiTest extends TestCase
@@ -14,6 +16,8 @@ class InventoryApiTest extends TestCase
 
     public function test_stock_in_increases_product_quantity(): void
     {
+        Sanctum::actingAs($this->createAdminUser(), ['*']);
+
         $product = $this->createProduct(quantity: 10);
 
         $response = $this->postJson('/api/stock-movements/stock-in', [
@@ -35,6 +39,8 @@ class InventoryApiTest extends TestCase
 
     public function test_order_creation_decreases_stock_and_creates_order_records(): void
     {
+        Sanctum::actingAs($this->createAdminUser(), ['*']);
+
         $product = $this->createProduct(quantity: 10, price: 299.99, sku: 'KBD-001');
 
         $response = $this->postJson('/api/orders', [
@@ -76,6 +82,8 @@ class InventoryApiTest extends TestCase
 
     public function test_insufficient_stock_returns_validation_error_and_rolls_back_order_creation(): void
     {
+        Sanctum::actingAs($this->createAdminUser(), ['*']);
+
         $product = $this->createProduct(quantity: 4, sku: 'MOU-001');
 
         $response = $this->postJson('/api/orders', [
@@ -104,6 +112,8 @@ class InventoryApiTest extends TestCase
 
     public function test_stock_movements_are_recorded_for_stock_in_and_stock_out(): void
     {
+        Sanctum::actingAs($this->createAdminUser(), ['*']);
+
         $product = $this->createProduct(quantity: 8, sku: 'CAB-001');
 
         $this->postJson('/api/stock-movements/stock-in', [
@@ -162,6 +172,13 @@ class InventoryApiTest extends TestCase
             'quantity' => $quantity,
             'min_quantity' => 2,
             'category_id' => $category->id,
+        ]);
+    }
+
+    private function createAdminUser(): User
+    {
+        return User::factory()->create([
+            'role' => User::ROLE_ADMIN,
         ]);
     }
 }
