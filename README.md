@@ -4,6 +4,26 @@
 
 This project is a Laravel API-based stock management backend for an e-commerce application.
 
+## Current State
+
+Current backend status:
+- core inventory schema is implemented
+- category CRUD is implemented
+- product CRUD is implemented
+- stock receiving is implemented
+- order creation is implemented
+- order listing and detail endpoints are implemented
+- stock movement listing and detail endpoints are implemented
+- demo seeders are implemented
+- core feature tests are implemented and passing
+
+Current application status:
+- backend API prototype is working
+- demo data can be reset and reloaded
+- the project is suitable for backend demonstration and API testing in Insomnia
+- there is no frontend application yet
+- there is no authentication or authorization layer yet
+
 The system currently supports:
 - categories
 - products
@@ -18,6 +38,16 @@ Core business rules implemented:
 - stock decreases when an order is placed
 - an order cannot be placed if stock is insufficient
 - every stock change is recorded in `stock_movements`
+
+What is not implemented yet:
+- frontend UI
+- authentication
+- authorization / roles / permissions
+- order cancellation with stock restoration
+- update or delete protection rules for business-critical records
+- dashboards, reports, or analytics
+- advanced search, sorting, and pagination customization
+- production deployment configuration
 
 ## What We Built Step By Step
 
@@ -403,6 +433,16 @@ Optional list filters:
 - `POST /api/orders`
 - `GET /api/orders`
 - `GET /api/orders/{id}`
+
+## Verified State
+
+These checks were run against the current codebase:
+- `php artisan route:list`
+- `php artisan test --filter=InventoryApiTest`
+
+Verified result:
+- 20 routes are currently registered
+- the 4 core inventory feature tests pass
 
 ## Presentation Summary
 
