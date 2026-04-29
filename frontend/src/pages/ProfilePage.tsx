@@ -7,9 +7,9 @@ export function ProfilePage() {
 
   return (
     <PageSection
-      eyebrow="Identity"
+      eyebrow="Profile"
       title="Authenticated user"
-      description="Use this screen during the demo to show which user is signed in and how the role changes what the UI allows."
+      description="Find your profile information here"
     >
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel>

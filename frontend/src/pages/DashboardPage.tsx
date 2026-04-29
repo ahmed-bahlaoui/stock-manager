@@ -71,7 +71,7 @@ export function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-1">
         <Panel>
           <h4 className="text-lg font-semibold text-slate-900">Role access</h4>
           <ul className="mt-4 space-y-3 text-sm text-slate-700">
@@ -81,7 +81,7 @@ export function DashboardPage() {
           </ul>
         </Panel>
 
-        <Panel>
+        {/* <Panel>
           <h4 className="text-lg font-semibold text-slate-900">Demo talking points</h4>
           <ol className="mt-4 space-y-3 text-sm text-slate-700">
             <li>1. Log in and show the authenticated role.</li>
@@ -89,7 +89,7 @@ export function DashboardPage() {
             <li>3. Receive stock or create an order depending on the user role.</li>
             <li>4. Confirm inventory changes through the movement audit trail.</li>
           </ol>
-        </Panel>
+        </Panel> */}
       </div>
     </PageSection>
   )
